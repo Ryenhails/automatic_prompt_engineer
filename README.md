@@ -1,4 +1,4 @@
-# Large Language Models Are Human-Level Prompt Engineers
+# Large Language Models Are Human-Level Prompt Engineers（Working for the API changing from Completion to ChatCompletion）
 
 Yongchao Zhou*, Andrei Ioan Muresanu*, Ziwen Han\*, Keiran Paster, Silviu Pitis, Harris Chan, Jimmy Ba
 
