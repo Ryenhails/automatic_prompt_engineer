@@ -147,6 +147,11 @@ class GPT_Forward(LLM):
 
     def __generate_text(self, prompt, n):
         """Generates text from the model."""
+        openai.api_key = os.environ.get("AZURE_OPENAI_KEY")
+        openai.api_base = os.environ.get(
+            "AZURE_OPENAI_ENDPOINT")  # your endpoint should look like the following https://YOUR_RESOURCE_NAME.openai.azure.com/
+        openai.api_type = 'azure'
+        openai.api_version = '2023-05-15'  # this may change in the future
         if not isinstance(prompt, list):
             text = [prompt]
         config = self.config['gpt_config'].copy()
@@ -154,19 +159,31 @@ class GPT_Forward(LLM):
         # If there are any [APE] tokens in the prompts, remove them
         for i in range(len(prompt)):
             prompt[i] = prompt[i].replace('[APE]', '').strip()
-        response = None
-        while response is None:
-            try:
-                response = openai.Completion.create(
-                    **config, prompt=prompt)
-            except Exception as e:
-                if 'is greater than the maximum' in str(e):
-                    raise BatchSizeException()
-                print(e)
-                print('Retrying...')
-                time.sleep(5)
+        # Initialize a list to store assistant replies
+        generated_prompt = []
+        for t in range(n):
+            assistant_replies = []
+            while len(assistant_replies) != len(prompt):
+                try:
+                    # Loop through prompts and generate responses
+                    for p in prompt:
+                        messages = [{"role": "user", "content": p}]
+                        response = openai.ChatCompletion.create(
+                            **config,
+                            engine="gpt35",
+                            messages=messages
+                        )
+                        assistant_reply = response['choices'][0]['message']['content']
+                        assistant_replies.append(assistant_reply)
 
-        return [response['choices'][i]['text'] for i in range(len(response['choices']))]
+                except Exception as e:
+                    if 'is greater than the maximum' in str(e):
+                        raise BatchSizeException()
+                    print(e)
+                    print('Retrying...')
+                    time.sleep(5)
+            generated_prompt += assistant_replies
+        return generated_prompt
 
     def __complete(self, prompt, n):
         """Generates text from the model and returns the log prob data."""
@@ -180,8 +197,8 @@ class GPT_Forward(LLM):
         response = None
         while response is None:
             try:
-                response = openai.Completion.create(
-                    **config, prompt=prompt)
+                response = openai.ChatCompletion.create(
+                    **config, message=[{"role": "user", "content": prompt}])
             except Exception as e:
                 print(e)
                 print('Retrying...')
@@ -209,8 +226,8 @@ class GPT_Forward(LLM):
         response = None
         while response is None:
             try:
-                response = openai.Completion.create(
-                    **config, prompt=text)
+                response = openai.ChatCompletion.create(
+                    **config, message=[{"role": "user", "content": text}])
             except Exception as e:
                 print(e)
                 print('Retrying...')

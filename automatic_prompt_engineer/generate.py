@@ -37,6 +37,6 @@ def generate_prompts(prompt_gen_template, demos_template, prompt_gen_data, confi
 
     # Instantiate the LLM
     model = llm.model_from_config(config['model'], disable_tqdm=False)
-    prompts = model.generate_text(
-        queries, n=config['num_prompts_per_subsample'])
+    prompts = model.generate_text(   #gpt_forward.generate_text
+        queries, n=config['num_prompts_per_subsample'])  #queries=meta-prompt for generation
     return prompts
